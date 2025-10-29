@@ -1,170 +1,89 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Inventory Management </title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #74ebd5, #ACB6E5);
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      min-height: 100vh;
-    }
-    .container {
-      background: #fff;
-      margin-top: 50px;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-      width: 90%;
-      max-width: 800px;
-    }
-    h2 {
-      text-align: center;
-      color: #333;
-      margin-bottom: 25px;
-    }
-    form {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    input {
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 14px;
-    }
-    button {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 8px;
-      background-color: #4CAF50;
-      color: white;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: center;
-    }
-    th, td {
-      border-bottom: 1px solid #ddd;
-      padding: 10px;
-    }
-    th {
-      background-color: #f3f3f3;
-      color: #333;
-    }
-    tr:hover {
-      background-color: #f9f9f9;
-    }
-    .edit-btn {
-      background-color: #2196F3;
-    }
-    .edit-btn:hover {
-      background-color: #0b7dda;
-    }
-    .delete-btn {
-      background-color: #f44336;
-    }
-    .delete-btn:hover {
-      background-color: #d32f2f;
-    }
-  </style>
+<title>Inventory Management</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <div class="container">
-    <h2>Inventory Management </h2>
+<h2>Inventory Management (Supabase)</h2>
 
-    <form id="form">
-      <input type="hidden" id="editId">
-      <input id="name" placeholder="Product Name" required>
-      <input id="sku" placeholder="SKU" required>
-      <input id="cat" placeholder="Category">
-      <input id="qty" type="number" placeholder="Quantity">
-      <input id="price" type="number" placeholder="Price">
-      <button type="submit">Add</button>
-    </form>
+<form id="form">
+  <input type="hidden" id="editId">
+  <input id="name" placeholder="Product Name" required>
+  <input id="sku" placeholder="SKU" required>
+  <input id="cat" placeholder="Category">
+  <input id="qty" type="number" placeholder="Quantity">
+  <input id="price" type="number" placeholder="Price">
+  <button type="submit">Add</button>
+</form>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th><th>SKU</th><th>Category</th><th>Qty</th><th>Price</th><th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="list"></tbody>
-    </table>
-  </div>
+<table border="1" cellpadding="5">
+<thead>
+<tr>
+  <th>Name</th><th>SKU</th><th>Category</th><th>Qty</th><th>Price</th><th>Action</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
 
-  <script>
-    const SUPABASE_URL = "https://tfpowgmvdqfugutxwuii.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcG93Z212ZHFmdWd1dHh3dWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3MTc1NDcsImV4cCI6MjA3NzI5MzU0N30.E0-UdjrKT23uiBMGZ5C6fmFeX_bRGjOYZ7ZgpjdiBNY";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const f = document.getElementById("form"), list = document.getElementById("list");
+<script>
+const SUPABASE_URL = "https://tfpowgmvdqfugutxwuii.supabase.co";  // ✅ your project URL
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcG93Z212ZHFmdWd1dHh3dWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3MTc1NDcsImV4cCI6MjA3NzI5MzU0N30.E0-UdjrKT23uiBMGZ5C6fmFeX_bRGjOYZ7ZgpjdiBNY";
 
-    async function loadData() {
-      const { data, error } = await supabase.from('inventory').select('*').order('id', { ascending: true });
-      if (error) return console.error(error);
-      list.innerHTML = data.map(i => `
-        <tr>
-          <td>${i.name}</td><td>${i.sku}</td><td>${i.category||''}</td>
-          <td>${i.quantity||0}</td><td>${i.price||0}</td>
-          <td>
-            <button class="edit-btn" onclick="edit(${i.id}, '${i.name}', '${i.sku}', '${i.category||''}', ${i.quantity||0}, ${i.price||0})">Edit</button>
-            <button class="delete-btn" onclick="del(${i.id})">Delete</button>
-          </td>
-        </tr>`).join('');
-    }
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const f = document.getElementById("form"), list = document.getElementById("list");
 
-    f.onsubmit = async e => {
-      e.preventDefault();
-      const name = f.name.value, sku = f.sku.value, category = f.cat.value;
-      const quantity = parseInt(f.qty.value)||0, price = parseFloat(f.price.value)||0;
+async function loadData() {
+  const { data, error } = await supabase.from('inventory').select('*').order('id', { ascending: true });
+  if (error) return console.error(error);
+  list.innerHTML = data.map(i => `
+    <tr>
+      <td>${i.name}</td><td>${i.sku}</td><td>${i.category||''}</td>
+      <td>${i.quantity||0}</td><td>${i.price||0}</td>
+      <td>
+        <button onclick="edit(${i.id}, '${i.name}', '${i.sku}', '${i.category||''}', ${i.quantity||0}, ${i.price||0})">Edit</button>
+        <button onclick="del(${i.id})">Delete</button>
+      </td>
+    </tr>`).join('');
+}
 
-      if (!name || !sku) return alert("Enter Product Name and SKU");
+f.onsubmit = async e => {
+  e.preventDefault();
+  const name = f.name.value, sku = f.sku.value, category = f.cat.value;
+  const quantity = parseInt(f.qty.value)||0, price = parseFloat(f.price.value)||0;
 
-      if (f.editId.value) {
-        const { error } = await supabase.from('inventory')
-          .update({ name, sku, category, quantity, price })
-          .eq('id', f.editId.value);
-        if (error) return alert(error.message);
-        f.editId.value = '';
-        f.querySelector("button").textContent = "Add";
-      } else {
-        const { error } = await supabase.from('inventory')
-          .insert([{ name, sku, category, quantity, price }]);
-        if (error) return alert(error.message);
-      }
-      f.reset();
-      loadData();
-    };
+  if (!name || !sku) return alert("Enter Product Name and SKU");
 
-    function edit(id, name, sku, category, quantity, price) {
-      f.name.value = name; f.sku.value = sku; f.cat.value = category;
-      f.qty.value = quantity; f.price.value = price;
-      f.editId.value = id; f.querySelector("button").textContent = "Update";
-    }
+  if (f.editId.value) {
+    const { error } = await supabase.from('inventory')
+      .update({ name, sku, category, quantity, price })
+      .eq('id', f.editId.value);
+    if (error) return alert(error.message);
+    f.editId.value = '';
+    f.querySelector("button").textContent = "Add";
+  } else {
+    const { error } = await supabase.from('inventory')
+      .insert([{ name, sku, category, quantity, price }]);
+    if (error) return alert(error.message);
+  }
+  f.reset();
+  loadData();
+};
 
-    async function del(id) {
-      const { error } = await supabase.from('inventory').delete().eq('id', id);
-      if (error) return alert(error.message);
-      loadData();
-    }
+function edit(id, name, sku, category, quantity, price) {
+  f.name.value = name; f.sku.value = sku; f.cat.value = category;
+  f.qty.value = quantity; f.price.value = price;
+  f.editId.value = id; f.querySelector("button").textContent = "Update";
+}
 
-    loadData();
-  </script>
+async function del(id) {
+  const { error } = await supabase.from('inventory').delete().eq('id', id);
+  if (error) return alert(error.message);
+  loadData();
+}
+
+// Load data initially
+loadData();
+</script>
 </body>
 </html>
