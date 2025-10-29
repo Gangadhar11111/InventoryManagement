@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Inventory Management</title>
+</head>
+<body>
+<h2>Inventory Management</h2>
+
+<form id="form">
+<input type="hidden" id="editId">
+<input id="name" placeholder="Product Name" required>
+<input id="sku" placeholder="SKU" required>
+<input id="cat" placeholder="Category">
+<input id="qty" type="number" placeholder="Quantity">
+<input id="price" type="number" placeholder="Price">
+<button type="submit">Add</button>
+</form>
+
+<table border="1" cellpadding="5">
+<thead>
+<tr>
+<th>Name</th><th>SKU</th><th>Category</th><th>Qty</th><th>Price</th><th>Action</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+
+<script>
+let data=[],id=0;
+const f=document.getElementById("form"),list=document.getElementById("list");
+
+f.onsubmit=e=>{
+ e.preventDefault();
+ const n=f.name.value,sku=f.sku.value,c=f.cat.value,q=f.qty.value,p=f.price.value;
+ if(!n||!sku)return alert("Enter Product Name and SKU");
+ if(f.editId.value){
+  let i=data.find(x=>x.id==f.editId.value);
+  Object.assign(i,{n,sku,c,q,p});
+  f.editId.value=""; f.querySelector("button").textContent="Add";
+ }else data.push({id:++id,n,sku,c,q,p});
+ f.reset(); show();
+};
+
+function show(){
+ list.innerHTML=data.map(i=>`<tr>
+ <td>${i.n}</td><td>${i.sku}</td><td>${i.c}</td>
+ <td>${i.q}</td><td>${i.p}</td>
+ <td><button onclick="edit(${i.id})">Edit</button>
+ <button onclick="del(${i.id})">Delete</button></td></tr>`).join("");
+}
+
+function edit(x){
+ const i=data.find(v=>v.id==x);
+ f.name.value=i.n; f.sku.value=i.sku; f.cat.value=i.c;
+ f.qty.value=i.q; f.price.value=i.p;
+ f.editId.value=i.id; f.querySelector("button").textContent="Update";
+}
+
+function del(x){
+ data=data.filter(v=>v.id!=x);
+ show();
+}
+</script>
+</body>
+</html>
