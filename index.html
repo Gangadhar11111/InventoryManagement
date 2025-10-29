@@ -2,64 +2,88 @@
 <html>
 <head>
 <title>Inventory Management</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<h2>Inventory Management</h2>
+<h2>Inventory Management (Supabase)</h2>
 
 <form id="form">
-<input type="hidden" id="editId">
-<input id="name" placeholder="Product Name" required>
-<input id="sku" placeholder="SKU" required>
-<input id="cat" placeholder="Category">
-<input id="qty" type="number" placeholder="Quantity">
-<input id="price" type="number" placeholder="Price">
-<button type="submit">Add</button>
+  <input type="hidden" id="editId">
+  <input id="name" placeholder="Product Name" required>
+  <input id="sku" placeholder="SKU" required>
+  <input id="cat" placeholder="Category">
+  <input id="qty" type="number" placeholder="Quantity">
+  <input id="price" type="number" placeholder="Price">
+  <button type="submit">Add</button>
 </form>
 
 <table border="1" cellpadding="5">
 <thead>
 <tr>
-<th>Name</th><th>SKU</th><th>Category</th><th>Qty</th><th>Price</th><th>Action</th>
+  <th>Name</th><th>SKU</th><th>Category</th><th>Qty</th><th>Price</th><th>Action</th>
 </tr>
 </thead>
 <tbody id="list"></tbody>
 </table>
 
 <script>
-let data=[],id=0;
-const f=document.getElementById("form"),list=document.getElementById("list");
+const SUPABASE_URL = "https://tfpowgmvdqfugutxwuii.supabase.co";  // ✅ your project URL
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcG93Z212ZHFmdWd1dHh3dWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3MTc1NDcsImV4cCI6MjA3NzI5MzU0N30.E0-UdjrKT23uiBMGZ5C6fmFeX_bRGjOYZ7ZgpjdiBNY";
 
-f.onsubmit=e=>{
- e.preventDefault();
- const n=f.name.value,sku=f.sku.value,c=f.cat.value,q=f.qty.value,p=f.price.value;
- if(!n||!sku)return alert("Enter Product Name and SKU");
- if(f.editId.value){
-  let i=data.find(x=>x.id==f.editId.value);
-  Object.assign(i,{n,sku,c,q,p});
-  f.editId.value=""; f.querySelector("button").textContent="Add";
- }else data.push({id:++id,n,sku,c,q,p});
- f.reset(); show();
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const f = document.getElementById("form"), list = document.getElementById("list");
+
+async function loadData() {
+  const { data, error } = await supabase.from('inventory').select('*').order('id', { ascending: true });
+  if (error) return console.error(error);
+  list.innerHTML = data.map(i => `
+    <tr>
+      <td>${i.name}</td><td>${i.sku}</td><td>${i.category||''}</td>
+      <td>${i.quantity||0}</td><td>${i.price||0}</td>
+      <td>
+        <button onclick="edit(${i.id}, '${i.name}', '${i.sku}', '${i.category||''}', ${i.quantity||0}, ${i.price||0})">Edit</button>
+        <button onclick="del(${i.id})">Delete</button>
+      </td>
+    </tr>`).join('');
+}
+
+f.onsubmit = async e => {
+  e.preventDefault();
+  const name = f.name.value, sku = f.sku.value, category = f.cat.value;
+  const quantity = parseInt(f.qty.value)||0, price = parseFloat(f.price.value)||0;
+
+  if (!name || !sku) return alert("Enter Product Name and SKU");
+
+  if (f.editId.value) {
+    const { error } = await supabase.from('inventory')
+      .update({ name, sku, category, quantity, price })
+      .eq('id', f.editId.value);
+    if (error) return alert(error.message);
+    f.editId.value = '';
+    f.querySelector("button").textContent = "Add";
+  } else {
+    const { error } = await supabase.from('inventory')
+      .insert([{ name, sku, category, quantity, price }]);
+    if (error) return alert(error.message);
+  }
+  f.reset();
+  loadData();
 };
 
-function show(){
- list.innerHTML=data.map(i=>`<tr>
- <td>${i.n}</td><td>${i.sku}</td><td>${i.c}</td>
- <td>${i.q}</td><td>${i.p}</td>
- <td><button onclick="edit(${i.id})">Edit</button>
- <button onclick="del(${i.id})">Delete</button></td></tr>`).join("");
+function edit(id, name, sku, category, quantity, price) {
+  f.name.value = name; f.sku.value = sku; f.cat.value = category;
+  f.qty.value = quantity; f.price.value = price;
+  f.editId.value = id; f.querySelector("button").textContent = "Update";
 }
 
-function edit(x){
- const i=data.find(v=>v.id==x);
- f.name.value=i.n; f.sku.value=i.sku; f.cat.value=i.c;
- f.qty.value=i.q; f.price.value=i.p;
- f.editId.value=i.id; f.querySelector("button").textContent="Update";
+async function del(id) {
+  const { error } = await supabase.from('inventory').delete().eq('id', id);
+  if (error) return alert(error.message);
+  loadData();
 }
 
-function del(x){
- data=data.filter(v=>v.id!=x);
- show();
-}
+// Load data initially
+loadData();
 </script>
 </body>
 </html>
